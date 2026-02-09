@@ -1,18 +1,321 @@
-# 🤖 Pedido Rejeitado v5 - Automação de Token Maxima
+# 🤖 Pedido Rejeitado v5 - Sistema de Reconciliação de Pagamentos
 
-Automação de login e extração de token JWT do sistema **Maxima** com Selenium Chrome em modo headless e polling otimizado.
+Sistema completo de automação que recupera pagamentos processados via cartão de crédito, busca pedidos importados no Winthor e identifica quais pagamentos **não foram integrados** (rejeitados).
 
-## 📋 Descrição
+## ✨ Características Principais
 
-Este projeto automatiza o processo de renovação de token de autenticação no sistema Maxima, extraindo o JWT armazenado no `localStorage` do navegador durante o login. O token é salvo no arquivo `.env` para uso em integrações API.
+✅ **Busca automática de pagamentos** - Extrai dados da API MaxPayment  
+✅ **Consulta de pedidos Winthor** - Verifica quais pedidos foram importados  
+✅ **Reconciliação inteligente** - Confronta e identifica discrepâncias  
+✅ **Notificações detalhadas** - Relatórios em console, JSON e TXT  
+✅ **Renovação de token automática** - Integra login via Selenium Chrome headless  
+✅ **Agrupamento por filial** - Análise de performance por unidade  
 
-**Características:**
-- ✅ Login automático no sistema Maxima
-- ✅ Extração de token JWT via JavaScript executor
-- ✅ Polling otimizado (9-10 segundos de execução)
-- ✅ Modo headless (sem interface gráfica)
-- ✅ Salvamento automático do token no `.env`
-- ✅ Limpeza de token (remove prefixo "Bearer")
+## 📊 Fluxo de Execução
+
+```
+┌─────────────────────────────┐
+│  python main.py             │  ← Executa reconciliação completa
+│  python main.py --token     │  ← Apenas renova token
+└─────────────────────────────┘
+                ↓
+        ┌───────────────────┐
+        │  1. Renovar Token │
+        │   (se necessário) │
+        └─────────┬─────────┘
+                  ↓
+    ┌─────────────────────────────┐
+    │ 2. Buscar Pagamentos MaxPay │
+    │    (Cartão de Crédito)      │
+    └──────────────┬──────────────┘
+                   ↓
+    ┌──────────────────────────────┐
+    │ 3. Buscar Pedidos Winthor    │
+    │    (Importados do dia)       │
+    └──────────────┬───────────────┘
+                   ↓
+    ┌──────────────────────────────┐
+    │ 4. Reconciliação             │
+    │    (Confronto de pedidos)    │
+    └──────────────┬───────────────┘
+                   ↓
+    ┌──────────────────────────────┐
+    │ 5. Gerar Relatórios          │
+    │    (JSON, TXT, Console)      │
+    └──────────────────────────────┘
+```
+
+## 🚀 Início Rápido
+
+### 1. Pré-requisitos
+
+- Python 3.8+
+- Google Chrome instalado
+- Conexão com internet
+
+### 2. Instalação
+
+```bash
+# Clone o repositório
+git clone https://github.com/seu-usuario/pedido-rejeitado-v5.git
+cd pedido-rejeitado-v5
+
+# Crie um ambiente virtual
+python -m venv venv
+source venv/bin/activate  # Linux/macOS
+# ou
+venv\Scripts\activate  # Windows
+
+# Instale dependências
+pip install -r requirements.txt
+```
+
+### 3. Configuração
+
+Copie o arquivo `.env.example` para `.env`:
+
+```bash
+cp .env.example .env
+```
+
+Edite o `.env` com suas credenciais:
+
+```env
+# MaxPayment API
+MAXPAYMENT_API_URL=https://maxpayment-api.solucoesmaxima.com.br/relatorio/ConsultarPagamentoPorPeriodo
+MAXIMA_AUTH_TOKEN=seu_token_jwt_aqui
+
+# Winthor API
+WINTHOR_API_URL=https://api.ebdgrupo.com.br/maxima/v1/pedidos
+WINTHOR_AUTH_TOKEN=seu_token_aqui
+
+# Credenciais Maxima (para renovação automática de token)
+MAXIMA_URL=https://app.solucoesmaxima.com.br/
+USUARIO_LOGIN=seu_usuario
+SENHA_LOGIN=sua_senha
+
+# XPath (não alterar se a interface não mudar)
+XPATH_USER=//*[@id="mat-input-0"]
+XPATH_PASS=//*[@id="mat-input-1"]
+```
+
+### 4. Execução
+
+**Reconciliação completa:**
+```bash
+python main.py
+```
+
+**Apenas renovar token:**
+```bash
+python main.py --token
+```
+
+**Ver ajuda:**
+```bash
+python main.py --help
+```
+
+## 📁 Estrutura do Projeto
+
+```
+pedido-rejeitado-v5/
+├── main.py                          # 🎯 Entry point principal
+├── config.py                        # Configurações (token automation)
+├── requirements.txt                 # Dependências do projeto
+├── .env.example                     # Template de configuração
+│
+├── models/                          # 📦 Modelos de dados
+│   ├── pagamento.py                # Pagamento (MaxPayment)
+│   ├── pedido_winthor.py           # PedidoWinthor
+│   ├── resultado_confronto.py      # ResultadoConfrontoPagamentos
+│   └── token_model.py              # TokenModel
+│
+├── services/                        # 🔧 Serviços de negócio
+│   ├── payment_service.py          # Busca pagamentos
+│   ├── winthor_service.py          # Busca pedidos Winthor
+│   ├── reconciliation_service.py   # Confronta (reconcilia)
+│   ├── notification_service.py     # Gera relatórios
+│   └── browser_service.py          # Automação de login
+│
+├── utils/                           # 🛠️ Utilitários
+│   └── logger.py                   # Sistema de logs
+│
+├── logs/                            # 📋 Saída de relatórios
+│   └── relatorio_confronto_*.json/txt
+│
+├── docs/                            # 📚 Documentação
+│   ├── README.md                   # Este arquivo
+│   ├── ARCHITECTURE.md             # Detalhes da arquitetura
+│   └── QUICK_START.md              # Exemplos de uso
+│
+└── LICENSE                          # MIT License
+```
+
+## 🎯 Arquitetura
+
+### 1. **PaymentService** - Busca Pagamentos
+Consulta a API MaxPayment para recuperar pagamentos via cartão de crédito.
+
+```python
+from services.payment_service import PaymentService
+
+service = PaymentService(url, token)
+pagamentos = service.buscar_pagamentos_ultimos_dias(dias=0)
+```
+
+### 2. **WinthorService** - Busca Pedidos
+Consulta a API Winthor para recuperar pedidos importados.
+
+```python
+from services.winthor_service import WinthorService
+
+service = WinthorService(url, token)
+pedidos = service.buscar_pedidos_importados()
+```
+
+### 3. **ReconciliationService** - Confronta
+Compara pagamentos com pedidos e identifica rejeitados.
+
+```python
+from services.reconciliation_service import ReconciliationService
+
+resultado = ReconciliationService.confrontar_pagamentos(
+    pagamentos=pagamentos,
+    pedidos_winthor=pedidos
+)
+
+print(resultado.resumo())
+# Processados: 337 | Integrados: 334 ✅ | Rejeitados: 3 ❌ | Taxa: 99.11%
+```
+
+### 4. **NotificationService** - Relatórios
+Gera notificações e salva relatórios em múltiplos formatos.
+
+```python
+from services.notification_service import NotificationService
+
+# Console
+NotificationService.notificar_rejeitados_console(resultado)
+
+# JSON
+NotificationService.salvar_relatorio_json(resultado, "relatorio.json")
+
+# Texto
+NotificationService.salvar_relatorio_texto(resultado, "relatorio.txt")
+```
+
+## 📊 Output Esperado
+
+### Console
+```
+================================================================================
+🤖 PEDIDO REJEITADO v5 - Sistema de Reconciliação de Pagamentos
+   Iniciado em: 09/02/2026 10:30:45
+================================================================================
+
+📥 Etapa 1: Buscando pagamentos na MaxPayment...
+   ✓ 337 pagamentos encontrados
+
+📥 Etapa 2: Buscando pedidos importados no Winthor...
+   ✓ 334 pedidos encontrados no Winthor
+
+🔄 Etapa 3: Reconciliando pagamentos...
+   ✓ Reconciliação concluída
+
+================================================================================
+📊 RESULTADO: Processados: 337 | Integrados: 334 ✅ | Rejeitados: 3 ❌ | Taxa: 99.11%
+================================================================================
+
+❌ PEDIDOS REJEITADOS - 2026-02-09T10:30:45.123456
+================================================================================
+FILIAL    | PEDIDO          | CLIENTE
+----------|-----------------|------------------------------
+10        | 269230489       | EMPORIO GERIBA LTDA
+15        | 269230490       | LOJA ONLINE LTDA
+10        | 269230491       | DISTRIBUIDORA CENTRAL
+----------|-----------------|------------------------------
+Total de rejeitados: 3
+
+💾 Gerando relatórios...
+
+✅ Processo concluído com sucesso!
+================================================================================
+```
+
+### JSON (`logs/relatorio_confronto_*.json`)
+```json
+{
+  "data_processamento": "2026-02-09T10:30:45.123456",
+  "total_pagamentos": 337,
+  "total_integrados": 334,
+  "total_rejeitados": 3,
+  "percentual_integracao": 99.11,
+  "pedidos": [
+    {
+      "codigo_filial": "10",
+      "numero_pedido": "269230489",
+      "cliente": "EMPORIO GERIBA LTDA",
+      "status": "REJEITADO"
+    }
+  ]
+}
+```
+
+## 🔐 Segurança
+
+⚠️ **Importante:**
+
+1. **Nunca commitar `.env`** com credenciais reais
+2. **Use `.env.example`** como template
+3. **Configurados em `.gitignore`**:
+   - `.env` (credenciais)
+   - `logs/` (relatórios com dados sensíveis)
+   - `__pycache__/` (Python cache)
+
+## 📝 Documentação Completa
+
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Detalhes técnicos da arquitetura
+- **[QUICK_START.md](QUICK_START.md)** - Exemplos práticos de uso
+
+## 🛠️ Troubleshooting
+
+### "Token não configurado"
+```bash
+# Renove o token automaticamente
+python main.py --token
+```
+
+### "Sem resultados"
+- Verifique se há pagamentos naquele período
+- Teste com `dias=7` para última semana
+
+### "Erro de autenticação"
+- Valide tokens no `.env`
+- Teste manualmente as APIs
+
+## 📦 Dependências
+
+```
+selenium>=4.0.0
+python-dotenv>=0.21.0
+webdriver-manager>=3.8.0
+requests>=2.28.0
+```
+
+## 📧 Contato & Suporte
+
+Para dúvidas, crie uma issue no GitHub.
+
+## 📄 Licença
+
+MIT License - Veja [LICENSE](LICENSE) para detalhes.
+
+---
+
+**Versão:** 5.0.0  
+**Última atualização:** Fevereiro de 2026  
+**Status:** ✅ Production Ready
 
 ## 🚀 Início Rápido
 
